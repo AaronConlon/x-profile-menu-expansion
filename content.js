@@ -376,7 +376,11 @@
 
   // Build URL for section
   function buildUrl(section) {
-    const username = document.querySelector('nav[role="navigation"] a[aria-label="Profile"]').getAttribute('href').replace('/', '') || 'AaronConlonDev';
+    const username = document.querySelector('nav[role="navigation"] a[aria-label="Profile"]').getAttribute('href').replace('/', '');
+    if (!username) {
+      alert('No username found');
+      return null;
+    }
     let url = `https://x.com/${username}`;
 
     switch (section) {
@@ -644,7 +648,7 @@
 
   // Find and attach to profile links
   function attachToProfileLinks() {
-    const profileLinks = document.querySelectorAll('a[href="/AaronConlonDev"][aria-label="Profile"][role="link"]');
+    const profileLinks = document.querySelectorAll('header>nav[role="navigation"]>a[aria-label="Profile"][role="link"]');
 
     profileLinks.forEach(link => {
       if (link.dataset.menuAttached) return;
