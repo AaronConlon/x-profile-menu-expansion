@@ -376,7 +376,7 @@
 
   // Build URL for section
   function buildUrl(section) {
-    const username = currentTarget?.getAttribute('href')?.replace('/', '') || 'AaronConlonDev';
+    const username = document.querySelector('nav[role="navigation"] a[aria-label="Profile"]').getAttribute('href').replace('/', '') || 'AaronConlonDev';
     let url = `https://x.com/${username}`;
 
     switch (section) {
