@@ -648,7 +648,13 @@
 
   // Find and attach to profile links
   function attachToProfileLinks() {
-    const profileLinks = document.querySelectorAll('header>nav[role="navigation"]>a[aria-label="Profile"][role="link"]');
+    const profileLinks = document.querySelectorAll('nav[role="navigation"]>a[aria-label="Profile"][role="link"]');
+
+    if (profileLinks.length === 0) {
+      // alert('No profile links found');
+      console.log('No profile links found');
+      return;
+    }
 
     profileLinks.forEach(link => {
       if (link.dataset.menuAttached) return;
