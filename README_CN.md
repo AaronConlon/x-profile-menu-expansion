@@ -2,6 +2,12 @@
 
 [English](./README.md) | **中文**
 
+## 截图展示
+
+![扩展菜单](https://de4965e.webp.li/blog-images/2025/08/4190f5359f196db2d2e70b617ea33f39.png)
+
+![模态窗口](https://de4965e.webp.li/blog-images/2025/08/6914bb00dad49d726ab5105549a03c77.png)
+
 ## 简介
 
 X/Twitter Profile Links Extension 是一个 Chrome 浏览器扩展，旨在为 X.com（原 Twitter）上的用户资料链接添加悬停菜单和模态弹出功能。用户可以通过右键点击快速查看用户的不同内容部分，如帖子、回复、媒体等。

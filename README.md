@@ -2,6 +2,12 @@
 
 **English** | [中文](./README_CN.md)
 
+## Screenshots
+
+![Extension Menu](https://de4965e.webp.li/blog-images/2025/08/4190f5359f196db2d2e70b617ea33f39.png)
+
+![Modal View](https://de4965e.webp.li/blog-images/2025/08/6914bb00dad49d726ab5105549a03c77.png)
+
 ## Introduction
 
 The X/Twitter Profile Links Extension is a Chrome browser extension designed to add a hover menu and modal popup functionality to user profile links on X.com (formerly Twitter). Users can quickly view different content sections such as posts, replies, media, etc., by right-clicking.
