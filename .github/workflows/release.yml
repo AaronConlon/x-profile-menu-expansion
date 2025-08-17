@@ -1,3 +1,4 @@
+
 name: Build and Release Extension
 
 on:
@@ -6,6 +7,10 @@ on:
       - "manifest.json"
     branches:
       - main
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
   build-and-release:
@@ -64,15 +69,18 @@ jobs:
           # Verify the CRX file was created
           ls -la *.crx
 
+      - name: Create source ZIP
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          # Create source ZIP
+          zip -r x-profile-menu-extension-source-v${{ steps.version.outputs.version }}.zip . -x "*.git*" "*node_modules*" "*.crx" "key.pem" "build/*"
+
       - name: Create Release
         if: steps.check_release.outputs.exists == 'false'
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          release_name: X Profile Menu Extension v${{ steps.version.outputs.version }}
+          name: X Profile Menu Extension v${{ steps.version.outputs.version }}
           body: |
             ## X/Twitter Profile Links Extension v${{ steps.version.outputs.version }}
 
@@ -89,36 +97,11 @@ jobs:
             - Keyboard navigation support
 
             **Note**: This release was automatically generated when manifest.json was updated.
+          files: |
+            x-profile-menu-extension-v${{ steps.version.outputs.version }}.crx
+            x-profile-menu-extension-source-v${{ steps.version.outputs.version }}.zip
           draft: false
           prerelease: false
-
-      - name: Upload CRX Asset
-        if: steps.check_release.outputs.exists == 'false'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./x-profile-menu-extension-v${{ steps.version.outputs.version }}.crx
-          asset_name: x-profile-menu-extension-v${{ steps.version.outputs.version }}.crx
-          asset_content_type: application/x-chrome-extension
-
-      - name: Upload source ZIP
-        if: steps.check_release.outputs.exists == 'false'
-        run: |
-          # Create source ZIP
-          zip -r x-profile-menu-extension-source-v${{ steps.version.outputs.version }}.zip . -x "*.git*" "*node_modules*" "*.crx" "key.pem" "build/*"
-
-      - name: Upload Source ZIP Asset
-        if: steps.check_release.outputs.exists == 'false'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./x-profile-menu-extension-source-v${{ steps.version.outputs.version }}.zip
-          asset_name: x-profile-menu-extension-source-v${{ steps.version.outputs.version }}.zip
-          asset_content_type: application/zip
 
       - name: Release already exists
         if: steps.check_release.outputs.exists == 'true'
