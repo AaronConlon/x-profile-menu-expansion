@@ -1,4 +1,3 @@
-
 name: Build and Release Extension
 
 on:
@@ -31,17 +30,31 @@ jobs:
       - name: Extract version from manifest
         id: version
         run: |
+          echo "Extracting version from manifest.json..."
+          if [ ! -f "manifest.json" ]; then
+            echo "Error: manifest.json not found!"
+            exit 1
+          fi
+          
           VERSION=$(node -p "require('./manifest.json').version")
+          if [ -z "$VERSION" ]; then
+            echo "Error: Failed to extract version from manifest.json!"
+            exit 1
+          fi
+          
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Extension version: $VERSION"
+          echo "✓ Extension version: $VERSION"
 
       - name: Check if release exists
         id: check_release
         run: |
+          echo "Checking if release v${{ steps.version.outputs.version }} already exists..."
           if gh release view "v${{ steps.version.outputs.version }}" > /dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Release v${{ steps.version.outputs.version }} already exists"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
+            echo "✓ Release v${{ steps.version.outputs.version }} does not exist, proceeding with build"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -49,31 +62,77 @@ jobs:
       - name: Generate private key for CRX signing
         if: steps.check_release.outputs.exists == 'false'
         run: |
+          echo "Generating private key for CRX signing..."
           openssl genrsa -out key.pem 2048
+          
+          if [ -f "key.pem" ]; then
+            echo "✓ Private key generated successfully"
+          else
+            echo "✗ Failed to generate private key!"
+            exit 1
+          fi
+
+      - name: Verify required files exist
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          echo "Checking required files..."
+          for file in manifest.json content.js styles.css; do
+            if [ ! -f "$file" ]; then
+              echo "Error: Required file $file not found!"
+              exit 1
+            else
+              echo "✓ Found $file"
+            fi
+          done
+          
+          if [ ! -d "image" ]; then
+            echo "Error: Required directory 'image' not found!"
+            exit 1
+          else
+            echo "✓ Found image directory"
+            ls -la image/
+          fi
 
       - name: Build CRX file
         if: steps.check_release.outputs.exists == 'false'
         run: |
-          # Create a temporary directory for the extension files
+          echo "Creating build directory..."
           mkdir -p build
 
-          # Copy all necessary files to build directory
+          echo "Copying extension files..."
           cp manifest.json build/
           cp content.js build/
           cp styles.css build/
           cp -r image build/
+          
+          echo "Build directory contents:"
+          ls -la build/
 
-          # Build the CRX file
+          echo "Building CRX file..."
           crx3 build build --key-path key.pem --output x-profile-menu-extension-v${{ steps.version.outputs.version }}.crx
 
-          # Verify the CRX file was created
-          ls -la *.crx
+          echo "Verifying CRX file was created..."
+          if [ -f "x-profile-menu-extension-v${{ steps.version.outputs.version }}.crx" ]; then
+            echo "✓ CRX file created successfully"
+            ls -la *.crx
+          else
+            echo "✗ CRX file creation failed!"
+            exit 1
+          fi
 
       - name: Create source ZIP
         if: steps.check_release.outputs.exists == 'false'
         run: |
-          # Create source ZIP
+          echo "Creating source ZIP..."
           zip -r x-profile-menu-extension-source-v${{ steps.version.outputs.version }}.zip . -x "*.git*" "*node_modules*" "*.crx" "key.pem" "build/*"
+          
+          if [ -f "x-profile-menu-extension-source-v${{ steps.version.outputs.version }}.zip" ]; then
+            echo "✓ Source ZIP created successfully"
+            ls -la *.zip
+          else
+            echo "✗ Source ZIP creation failed!"
+            exit 1
+          fi
 
       - name: Create Release
         if: steps.check_release.outputs.exists == 'false'
