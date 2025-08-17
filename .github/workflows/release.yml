@@ -1,0 +1,126 @@
+name: Build and Release Extension
+
+on:
+  push:
+    paths:
+      - "manifest.json"
+    branches:
+      - main
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install crx3 CLI
+        run: npm install -g crx3
+
+      - name: Extract version from manifest
+        id: version
+        run: |
+          VERSION=$(node -p "require('./manifest.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extension version: $VERSION"
+
+      - name: Check if release exists
+        id: check_release
+        run: |
+          if gh release view "v${{ steps.version.outputs.version }}" > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate private key for CRX signing
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          openssl genrsa -out key.pem 2048
+
+      - name: Build CRX file
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          # Create a temporary directory for the extension files
+          mkdir -p build
+
+          # Copy all necessary files to build directory
+          cp manifest.json build/
+          cp content.js build/
+          cp styles.css build/
+          cp -r image build/
+
+          # Build the CRX file
+          crx3 build build --key-path key.pem --output x-profile-menu-extension-v${{ steps.version.outputs.version }}.crx
+
+          # Verify the CRX file was created
+          ls -la *.crx
+
+      - name: Create Release
+        if: steps.check_release.outputs.exists == 'false'
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          release_name: X Profile Menu Extension v${{ steps.version.outputs.version }}
+          body: |
+            ## X/Twitter Profile Links Extension v${{ steps.version.outputs.version }}
+
+            ### Installation
+            1. Download the `x-profile-menu-extension-v${{ steps.version.outputs.version }}.crx` file
+            2. Open Chrome/Edge and go to `chrome://extensions/` or `edge://extensions/`
+            3. Enable "Developer mode"
+            4. Drag and drop the CRX file to install
+
+            ### Features
+            - Adds hover menu to profile links on X.com
+            - Modal popup functionality for quick profile browsing
+            - Resizable modal window
+            - Keyboard navigation support
+
+            **Note**: This release was automatically generated when manifest.json was updated.
+          draft: false
+          prerelease: false
+
+      - name: Upload CRX Asset
+        if: steps.check_release.outputs.exists == 'false'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./x-profile-menu-extension-v${{ steps.version.outputs.version }}.crx
+          asset_name: x-profile-menu-extension-v${{ steps.version.outputs.version }}.crx
+          asset_content_type: application/x-chrome-extension
+
+      - name: Upload source ZIP
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          # Create source ZIP
+          zip -r x-profile-menu-extension-source-v${{ steps.version.outputs.version }}.zip . -x "*.git*" "*node_modules*" "*.crx" "key.pem" "build/*"
+
+      - name: Upload Source ZIP Asset
+        if: steps.check_release.outputs.exists == 'false'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./x-profile-menu-extension-source-v${{ steps.version.outputs.version }}.zip
+          asset_name: x-profile-menu-extension-source-v${{ steps.version.outputs.version }}.zip
+          asset_content_type: application/zip
+
+      - name: Release already exists
+        if: steps.check_release.outputs.exists == 'true'
+        run: |
+          echo "Release v${{ steps.version.outputs.version }} already exists. Skipping build and release."
