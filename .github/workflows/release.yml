@@ -2,8 +2,6 @@ name: Build and Release Extension
 
 on:
   push:
-    paths:
-      - "manifest.json"
     branches:
       - main
 
@@ -45,22 +43,46 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "✓ Extension version: $VERSION"
 
-      - name: Check if release exists
-        id: check_release
+      - name: Get latest release version
+        id: latest_release
         run: |
-          echo "Checking if release v${{ steps.version.outputs.version }} already exists..."
-          if gh release view "v${{ steps.version.outputs.version }}" > /dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "⚠️ Release v${{ steps.version.outputs.version }} already exists"
+          echo "Getting latest release version..."
+          LATEST_VERSION=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
+          
+          if [ -n "$LATEST_VERSION" ]; then
+            # Remove 'v' prefix if present
+            LATEST_VERSION=${LATEST_VERSION#v}
+            echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+            echo "📋 Latest release version: $LATEST_VERSION"
           else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "✓ Release v${{ steps.version.outputs.version }} does not exist, proceeding with build"
+            echo "latest_version=" >> $GITHUB_OUTPUT
+            echo "📋 No previous releases found"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check if build is needed
+        id: check_build
+        run: |
+          CURRENT_VERSION="${{ steps.version.outputs.version }}"
+          LATEST_VERSION="${{ steps.latest_release.outputs.latest_version }}"
+          
+          echo "Current manifest version: $CURRENT_VERSION"
+          echo "Latest release version: $LATEST_VERSION"
+          
+          if [ -z "$LATEST_VERSION" ]; then
+            echo "build_needed=true" >> $GITHUB_OUTPUT
+            echo "🏗️ Build needed: No previous releases found"
+          elif [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
+            echo "build_needed=true" >> $GITHUB_OUTPUT
+            echo "🏗️ Build needed: Version changed from $LATEST_VERSION to $CURRENT_VERSION"
+          else
+            echo "build_needed=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Build skipped: Version $CURRENT_VERSION already released"
+          fi
+
       - name: Generate private key for CRX signing
-        if: steps.check_release.outputs.exists == 'false'
+        if: steps.check_build.outputs.build_needed == 'true'
         run: |
           echo "Generating private key for CRX signing..."
           openssl genrsa -out key.pem 2048
@@ -73,7 +95,7 @@ jobs:
           fi
 
       - name: Verify required files exist
-        if: steps.check_release.outputs.exists == 'false'
+        if: steps.check_build.outputs.build_needed == 'true'
         run: |
           echo "Checking required files..."
           for file in manifest.json content.js styles.css; do
@@ -94,7 +116,7 @@ jobs:
           fi
 
       - name: Build CRX file
-        if: steps.check_release.outputs.exists == 'false'
+        if: steps.check_build.outputs.build_needed == 'true'
         run: |
           echo "Creating build directory..."
           mkdir -p build
@@ -121,7 +143,7 @@ jobs:
           fi
 
       - name: Create source ZIP
-        if: steps.check_release.outputs.exists == 'false'
+        if: steps.check_build.outputs.build_needed == 'true'
         run: |
           echo "Creating source ZIP..."
           zip -r x-profile-menu-extension-source-v${{ steps.version.outputs.version }}.zip . -x "*.git*" "*node_modules*" "*.crx" "key.pem" "build/*"
@@ -135,7 +157,7 @@ jobs:
           fi
 
       - name: Create Release
-        if: steps.check_release.outputs.exists == 'false'
+        if: steps.check_build.outputs.build_needed == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.version }}
@@ -162,7 +184,7 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Release already exists
-        if: steps.check_release.outputs.exists == 'true'
+      - name: Build skipped
+        if: steps.check_build.outputs.build_needed == 'false'
         run: |
-          echo "Release v${{ steps.version.outputs.version }} already exists. Skipping build and release."
+          echo "✅ Build and release skipped - version ${{ steps.version.outputs.version }} already released."
