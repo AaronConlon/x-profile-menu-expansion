@@ -129,16 +129,30 @@ jobs:
           
           echo "Build directory contents:"
           ls -la build/
+          
+          echo "Checking private key file..."
+          if [ -f "key.pem" ]; then
+            echo "✓ Private key file exists"
+            ls -la key.pem
+          else
+            echo "✗ Private key file not found!"
+            exit 1
+          fi
 
           echo "Building CRX file..."
-          crx3 build build --key-path key.pem --output x-profile-menu-extension-v${{ steps.version.outputs.version }}.crx
+          crx3 -p key.pem -o x-profile-menu-extension-v${{ steps.version.outputs.version }}.crx build
 
           echo "Verifying CRX file was created..."
           if [ -f "x-profile-menu-extension-v${{ steps.version.outputs.version }}.crx" ]; then
             echo "✓ CRX file created successfully"
             ls -la *.crx
+          elif [ -f "web-extension.crx" ]; then
+            echo "✓ CRX file created with default name, renaming..."
+            mv web-extension.crx x-profile-menu-extension-v${{ steps.version.outputs.version }}.crx
+            ls -la *.crx
           else
             echo "✗ CRX file creation failed!"
+            ls -la
             exit 1
           fi
 
