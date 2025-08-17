@@ -1,46 +1,48 @@
 # X/Twitter Profile Links Extension
 
-## 简介
+**English** | [中文](./README_CN.md)
 
-X/Twitter Profile Links Extension 是一个 Chrome 浏览器扩展，旨在为 X.com（原 Twitter）上的用户资料链接添加悬停菜单和模态弹出功能。用户可以通过右键点击快速查看用户的不同内容部分，如帖子、回复、媒体等。
+## Introduction
 
-## 功能
+The X/Twitter Profile Links Extension is a Chrome browser extension designed to add a hover menu and modal popup functionality to user profile links on X.com (formerly Twitter). Users can quickly view different content sections such as posts, replies, media, etc., by right-clicking.
 
-- **悬停菜单**：在用户资料链接上悬停时显示菜单。
-- **模态弹出**：右键点击菜单项以模态形式查看内容。
-- **尺寸调整**：支持拖拽调整模态框大小，并自动保存尺寸。
-- **媒体控制**：打开模态框时自动暂停页面上的视频和音频。
-- **调试按钮**：提供调试按钮以便开发者测试模态功能。
+## Features
 
-## 安装
+- **Hover Menu**: Displays a menu when hovering over user profile links.
+- **Modal Popup**: Right-click a menu item to view content in a modal.
+- **Resizable**: Supports drag-and-drop resizing of the modal and automatically saves dimensions.
+- **Media Control**: Automatically pauses videos and audio on the page when the modal is opened.
+- **Debug Button**: Provides a debug button for developers to test modal functionality.
 
-1. 克隆或下载此仓库。
-2. 打开 Chrome 浏览器，进入 `chrome://extensions/`。
-3. 打开右上角的“开发者模式”。
-4. 点击“加载已解压的扩展程序”，选择项目文件夹。
+## Installation
 
-## 使用说明
+1. Clone or download this repository.
+2. Open Chrome browser and go to `chrome://extensions/`.
+3. Enable "Developer mode" in the top right corner.
+4. Click "Load unpacked" and select the project folder.
 
-- **悬停菜单**：将鼠标悬停在 X.com 上的用户资料链接上以显示菜单。
-- **模态弹出**：右键点击菜单项以打开模态框查看内容。
-- **调试按钮**：在页面右下角显示的调试按钮可用于测试模态功能。
+## Usage
 
-## 开发者信息
+- **Hover Menu**: Hover over user profile links on X.com to display the menu.
+- **Modal Popup**: Right-click a menu item to open the modal and view content.
+- **Debug Button**: Use the debug button displayed at the bottom right of the page to test modal functionality.
 
-- **文件结构**：
-  - `manifest.json`：Chrome 扩展的配置文件。
-  - `content.js`：主要的 JavaScript 逻辑文件。
-  - `styles.css`：扩展的样式文件。
+## Developer Information
 
-- **开发指南**：
-  - 使用 `chrome.storage.local` 存储和加载模态框尺寸。
-  - 通过 `window.__xProfileExtensionModalCreated` 变量跟踪模态框创建状态。
-  - 使用 `window.addEventListener('message', ...)` 处理 iframe 通信。
+- **File Structure**:
+  - `manifest.json`: Configuration file for the Chrome extension.
+  - `content.js`: Main JavaScript logic file.
+  - `styles.css`: Stylesheet for the extension.
 
-## 贡献
+- **Development Guide**:
+  - Uses `chrome.storage.local` to store and load modal dimensions.
+  - Tracks modal creation state with `window.__xProfileExtensionModalCreated`.
+  - Handles iframe communication using `window.addEventListener('message', ...)`.
 
-欢迎贡献代码！请提交 Pull Request 或报告问题。
+## Contribution
 
-## 许可证
+Contributions are welcome! Please submit a Pull Request or report issues.
 
-MIT 许可证。详见 LICENSE 文件。
+## License
+
+MIT License. See LICENSE file for details.
