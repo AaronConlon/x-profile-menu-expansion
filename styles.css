@@ -100,6 +100,22 @@
   color: var(--accent-foreground);
 }
 
+.menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 8px;
+}
+
+.sandbox-item {
+  font-weight: 500;
+  color: var(--primary);
+}
+
+.sandbox-item:hover {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;

@@ -100,49 +100,30 @@
         hideMenu();
       }
     });
-    
-    // Right click - show modal (old left click behavior)
-    menuItem.addEventListener('contextmenu', async (e) => {
-      e.preventDefault();
-      
-      // Create modal if it doesn't exist
-      if (!modalOverlay) {
-        createModal();
-      }
-      
-      // Check if clicking the same item and modal is already visible
-      const isVisible = modalOverlay.style.getPropertyValue('--modal-visibility') === 'visible';
-      const isSameSection = lastClickedSection === item;
-      
-      if (isVisible && isSameSection) {
-        // Same item clicked while modal is visible - toggle hide
-        hideModal();
-      } else {
-        // Different item or modal is hidden - show modal with this item
-        await showModal(item);
-      }
-      
-      hideMenu();
-    });
-
-    menuItem.addEventListener('mouseenter', () => {
-      // Disable hover if modal was ever created
-      if (window.__xProfileExtensionModalCreated) {
-        return;
-      }
-      
-      // Only preload URL if modal exists (no longer create modal on hover)
-      if (modalOverlay) {
-        const url = buildUrl(item);
-        if (iframe && currentIframeUrl !== url) {
-          iframe.src = url;
-          currentIframeUrl = url;
-        }
-      }
-    });
 
     menu.appendChild(menuItem);
   });
+
+  // Add divider
+  const divider = document.createElement('div');
+  divider.className = 'menu-divider';
+  menu.appendChild(divider);
+
+  // Add Profile sandbox item
+  const sandboxItem = document.createElement('a');
+  sandboxItem.className = 'menu-item sandbox-item';
+  sandboxItem.textContent = 'Profile sandbox';
+  sandboxItem.href = '#';
+  sandboxItem.dataset.section = 'sandbox';
+
+  // Profile sandbox click handler
+  sandboxItem.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await toggleModal();
+    hideMenu();
+  });
+
+  menu.appendChild(sandboxItem);
 
   shadow.appendChild(menu);
 
@@ -161,28 +142,18 @@
   debugButton.style.display = 'none'; // Hide until modal is created
   shadow.appendChild(debugButton);
 
-  // Add debug button click handler
-  debugButton.addEventListener('click', async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+  // Toggle modal function - unified logic for sandbox and debug button
+  async function toggleModal() {
     // Create modal if it doesn't exist
     if (!modalOverlay) {
       createModal();
-      // Set a default URL for testing
-      if (iframe) {
-        const testUrl = buildUrl('posts');
-        iframe.src = testUrl;
-        currentIframeUrl = testUrl;
-      }
     }
     
-    // Pure toggle - debug button ignores lastClickedSection logic
+    // Pure toggle - ignores lastClickedSection logic
     const isVisible = modalOverlay.style.getPropertyValue('--modal-visibility') === 'visible';
     if (isVisible) {
       // Simply hide without affecting lastClickedSection
-      modalOverlay.style.setProperty('--modal-visibility', 'hidden');
-      document.body.style.overflow = '';
+      hideModal();
     } else {
       // Show modal without changing iframe URL if it already exists
       // Load latest dimensions and apply
@@ -200,13 +171,24 @@
       
       // Only set iframe URL if it doesn't have one yet
       if (iframe && !currentIframeUrl) {
-        const testUrl = buildUrl('posts');
-        iframe.src = testUrl;
-        currentIframeUrl = testUrl;
-        currentSection = 'posts';
-        currentSectionIndex = 0;
+        // Get the profile URL for sandbox mode
+        const username = document.querySelector('nav[role="navigation"] a[aria-label="Profile"]')?.getAttribute('href')?.replace('/', '');
+        if (username) {
+          const profileUrl = `https://x.com/${username}`;
+          iframe.src = profileUrl;
+          currentIframeUrl = profileUrl;
+          currentSection = 'sandbox';
+          currentSectionIndex = -1;
+        }
       }
     }
+  }
+
+  // Add debug button click handler
+  debugButton.addEventListener('click', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await toggleModal();
   });
 
   // Modal elements will be created on first hover
@@ -237,8 +219,9 @@
 
     iframe = document.createElement('iframe');
     iframe.className = 'modal-iframe';
-    iframe.allow = 'fullscreen';
-    iframe.sandbox = 'allow-same-origin allow-scripts allow-forms allow-popups allow-presentation';
+    // iframe.sandbox = 'allow-same-origin allow-scripts allow-forms allow-popups allow-presentation';
+    // iframe.sandbox = 'allow-same-origin allow-popups allow-forms allow-downloads allow-modals allow-storage-access-by-user-activation allow-popups-to-escape-sandbox allow-presentation'
+    // iframe.allow = 'geolocation *; ch-ua-full-version-list *; cross-origin-isolated *; screen-wake-lock *; on-device-speech-recognition *; translator *; publickey-credentials-get *; shared-storage-select-url *; ch-ua-arch *; bluetooth *; compute-pressure *; ch-prefers-reduced-transparency *; deferred-fetch *; usb *; ch-save-data *; publickey-credentials-create *; shared-storage *; deferred-fetch-minimal *; run-ad-auction *; ch-downlink *; ch-ua-form-factors *; otp-credentials *; payment *; ch-ua *; ch-ua-model *; ch-ect *; autoplay *; camera *; language-detector *; private-state-token-issuance *; digital-credentials-get *; accelerometer *; ch-ua-platform-version *; idle-detection *; language-model *; private-aggregation *; interest-cohort *; ch-viewport-height *; captured-surface-control *; local-fonts *; ch-ua-platform *; midi *; ch-ua-full-version *; xr-spatial-tracking *; clipboard-read *; gamepad *; display-capture *; keyboard-map *; join-ad-interest-group *; aria-notify *; ch-width *; ch-prefers-reduced-motion *; browsing-topics *; encrypted-media *; gyroscope *; serial *; ch-rtt *; ch-ua-mobile *; window-management *; unload *; ch-dpr *; ch-prefers-color-scheme *; ch-ua-wow64 *; attribution-reporting *; fullscreen *; identity-credentials-get *; private-state-token-redemption *; hid *; summarizer *; ch-ua-bitness *; storage-access *; sync-xhr *; ch-device-memory *; ch-viewport-width *; picture-in-picture *; magnetometer *; clipboard-write *; microphone *'
     
     // Add message listener for iframe communication
     window.addEventListener('message', (event) => {
@@ -427,10 +410,14 @@
   }
 
   function switchToSection(section, index) {
+    // Don't switch to sandbox via navigation - it's only accessible via direct click
+    if (section === 'sandbox') return;
+
     currentSection = section;
     currentSectionIndex = index;
 
     const url = buildUrl(section);
+
     if (iframe && currentIframeUrl !== url) {
       iframe.src = url;
       currentIframeUrl = url;
@@ -482,7 +469,7 @@
     // Note: We keep the modal and iframe intact for faster reopening
   }
 
-  async function showModal(section) {
+  async function showModal(section, customUrl = null) {
     // Check if modal already exists
     const modalExists = !!modalOverlay;
     
@@ -512,8 +499,10 @@
       modalOverlay.style.setProperty('--modal-visibility', 'visible');
     }
 
+    // Determine URL to use
+    const url = customUrl || buildUrl(section);
+
     // Only set iframe URL if it's different from current (before updating currentSection)
-    const url = buildUrl(section);
     if (iframe && currentIframeUrl !== url) {
       iframe.src = url;
       currentIframeUrl = url;
@@ -521,7 +510,7 @@
 
     // Update current section after URL check
     currentSection = section;
-    currentSectionIndex = menuItems.indexOf(section);
+    currentSectionIndex = section === 'sandbox' ? -1 : menuItems.indexOf(section);
     lastClickedSection = section; // Remember the section being shown
 
     // Prevent body scroll
@@ -661,11 +650,6 @@
       link.dataset.menuAttached = 'true';
 
       link.addEventListener('mouseenter', (e) => {
-        // Disable hover if modal was ever created
-        if (window.__xProfileExtensionModalCreated) {
-          return;
-        }
-        
         clearTimeout(hoverTimeout);
         showMenu(link, e);
       });

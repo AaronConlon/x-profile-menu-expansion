@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "X/Twitter Profile Links Extension",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Adds a hover menu to profile links on X.com with modal popup functionality",
   "icons": {
     "16": "image/x-16.png",
