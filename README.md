@@ -22,10 +22,25 @@ The X/Twitter Profile Links Extension is a Chrome browser extension designed to 
 
 ## Installation
 
-1. Clone or download this repository.
-2. Open Chrome browser and go to `chrome://extensions/`.
-3. Enable "Developer mode" in the top right corner.
-4. Click "Load unpacked" and select the project folder.
+### Method 1: Install from Release (Recommended)
+
+1. Download the latest `.zip` file from [Releases](../../releases)
+2. Open Chrome browser and go to `chrome://extensions/`
+3. Enable "Developer mode" in the top right corner
+4. Drag and drop the ZIP file to install
+
+### Method 2: Build from Source
+
+1. Clone or download this repository
+2. Run the build script: `node build.js`
+3. Install the generated ZIP file as described in Method 1
+
+### Method 3: Development Installation
+
+1. Clone or download this repository
+2. Open Chrome browser and go to `chrome://extensions/`
+3. Enable "Developer mode" in the top right corner
+4. Click "Load unpacked" and select the project folder
 
 ## Usage
 
